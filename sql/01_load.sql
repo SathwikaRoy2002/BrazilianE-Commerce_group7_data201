@@ -1,11 +1,11 @@
--- =====================================================================
+-- ----------------------------------------------------------------------
 -- 01_load.sql
 -- Step 1 of 4: load the 9 raw Olist CSV files into load tables
 --
 -- Run from the repository root (so the relative data/ paths resolve):
 --   mysql --local-infile=1 -u root -p < sql/01_load.sql
 -- Server must allow it once:  SET GLOBAL local_infile = 1;
--- =====================================================================
+-- ----------------------------------------------------------------------
 
 CREATE DATABASE IF NOT EXISTS olist
   CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
