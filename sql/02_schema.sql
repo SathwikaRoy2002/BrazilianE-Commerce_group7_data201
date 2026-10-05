@@ -29,7 +29,8 @@ CREATE TABLE zip_code (
     latitude DECIMAL(10, 7) NULL,
     longitude DECIMAL(10, 7) NULL,
     geo_points INT NOT NULL DEFAULT 0,
-    PRIMARY KEY (zip_code_prefix) CONSTRAINT chk_zip_lat CHECK (
+    PRIMARY KEY (zip_code_prefix),
+    CONSTRAINT chk_zip_lat CHECK (
         latitude IS NULL
         OR latitude BETWEEN -34 AND 6
     ),
