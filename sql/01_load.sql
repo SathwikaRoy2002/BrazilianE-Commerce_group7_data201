@@ -141,4 +141,3 @@ UNION ALL SELECT 'stg_orders', COUNT(*) FROM stg_orders
 UNION ALL SELECT 'stg_products', COUNT(*) FROM stg_products
 UNION ALL SELECT 'stg_sellers', COUNT(*) FROM stg_sellers
 UNION ALL SELECT 'stg_category_translation', COUNT(*) FROM stg_category_translation;
-
