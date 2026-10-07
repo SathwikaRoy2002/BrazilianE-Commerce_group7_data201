@@ -55,7 +55,7 @@ CREATE TABLE customer (
 CREATE TABLE seller (
     seller_id CHAR(36) NOT NULL,
     zip_code_prefix CHAR(5) NOT NULL,
-    city VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NULL, -- NULL when the source city was an email or zip (2 sellers)
     PRIMARY KEY (seller_id),
     CONSTRAINT fk_seller_zip FOREIGN KEY (zip_code_prefix) REFERENCES zip_code (zip_code_prefix)
 );
