@@ -1,6 +1,6 @@
 -- =====================================================================
 -- joins.sql - basic and advanced join queries (Drumil)
--- Fixed to match our schema in 02_schema.sql. Run after 01, 02 and 03.
+-- Fixed to match our schema in 02_schema.sql. 
 -- =====================================================================
 USE olist;
 
@@ -45,15 +45,14 @@ WHERE    orv.review_id IS NULL;
 -- 3. ADVANCED - multiple joins with GROUP BY and HAVING
 -- Customers who spent more than 500 in total, highest spender first
 -- ---------------------------------------------------------------------
-SELECT   c.customer_unique_id,
-         COUNT(DISTINCT o.order_id)          AS orders_placed,
-         SUM(oi.quantity * oi.unit_price)    AS total_spent
-FROM     customer c
-JOIN     orders o      ON c.customer_id = o.customer_id
-JOIN     order_item oi ON o.order_id    = oi.order_id
-GROUP BY c.customer_unique_id
-HAVING   SUM(oi.quantity * oi.unit_price) > 500
-ORDER BY total_spent DESC;
+select c.customer_unique_id,
+         count(distinct o.order_id) as orders_placed,
+         sum(oi.quantity * oi.unit_price) as total_spent
+         from customer c
+         join orders o on c.customer_id = o.customer_id
+         join order_item oi on o.order_id = oi.order_id
+         group by c.customer_unique_id
+         order by total_spent desc;
 
 -- This query joins customer, orders and order_item to calculate the total amount each customer spent.
 -- The price is stored in order_item (unit_price), so the products table is not needed here.
@@ -66,16 +65,16 @@ ORDER BY total_spent DESC;
 -- ---------------------------------------------------------------------
 -- 4. ADVANCED - join with a subquery (most recent order per customer)
 -- ---------------------------------------------------------------------
-SELECT   c.customer_unique_id,
+select c.customer_unique_id,
          o.order_id,
          o.purchase_ts
 FROM     customer c
 JOIN     orders o
-         ON c.customer_id = o.customer_id
-JOIN     (SELECT   c2.customer_unique_id,
+         on c.customer_id = o.customer_id
+join (select c2.customer_unique_id,
                    MAX(o2.purchase_ts) AS last_date
           FROM     customer c2
-          JOIN     orders o2 ON c2.customer_id = o2.customer_id
+          join orders o2 on c2.customer_id = o2.customer_id
           GROUP BY c2.customer_unique_id) lo
          ON  c.customer_unique_id = lo.customer_unique_id
          AND o.purchase_ts        = lo.last_date
