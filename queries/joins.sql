@@ -1,94 +1,87 @@
--- 2 basic queries by DRUMIL
-
--- 1. this query combines orders and customer tables to show each order along with the name of customer who placed it
---  uses an INNER JOIN so only rows matched in both tables are returned
--- customer without any order are not shown
-
-
-select o.order_ird, o.order_date, c.name
-from orders o 
-inner join customer c 
-  on o.customer_id = c.customer_id
--- -- -- -- -- -- -- -- ---- -- --  -- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- --
--- 1. this query combines orders and customer tables to show each order along with the name of customer who placed it
---  uses an INNER JOIN so only rows matched in both tables are returned
--- customer without any order are not shown
-
---  from order o starts with orders table
---  inner join customer c bring in customer table
---  on on o.customer_id = c.customer_id it matches the order to customer with same ID 
---  eg = order 101 has customer_id 1 so its paired 
+-- =====================================================================
+-- joins.sql - basic and advanced join queries (Drumil)
+-- Fixed to match our schema in 02_schema.sql. Run after 01, 02 and 03.
+-- =====================================================================
+USE olist;
 
 
--- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- --
+-- ---------------------------------------------------------------------
+-- 1. INNER JOIN - each order with the customer who placed it
+-- ---------------------------------------------------------------------
+SELECT   o.order_id,
+         o.purchase_ts,
+         c.customer_unique_id,
+         c.city
+FROM     orders o
+INNER JOIN customer c
+         ON o.customer_id = c.customer_id
+ORDER BY o.purchase_ts
+LIMIT    20;
 
--- 2. left join
-
-select c.name, o.order_id, o.order_date
-from customer c
-left join order o
-  on customer_id = o.customer_id;
-
-
--- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- --
--- 2. this query lists all the customer along with any orders they have placed
--- ituses left join which keeps everything row from the customer table even if there is no match order 
---  for customer who have not placed any order column shows null
-
--- from customer c makes the customer left table writtenn first 
--- left join order okeeps every row from left table its matches it or not in order
---  if a customer has no matching sql order it still returns customer's row with order filled with columns as NULL
-
-
--- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- --
+-- This query combines the orders and customer tables to show each order along with the customer who placed it.
+-- INNER JOIN returns only rows that match in both tables.
+-- FROM orders o starts with the orders table, INNER JOIN customer c brings in the customer table,
+-- and ON o.customer_id = c.customer_id pairs each order with the customer that has the same ID.
+-- Our customer table has no name column, so customer_unique_id and city identify the customer.
 
 
--- 3. Advance queries
+-- ---------------------------------------------------------------------
+-- 2. LEFT JOIN - every order and its review, including orders with no review
+-- ---------------------------------------------------------------------
+SELECT   o.order_id,
+         o.order_status,
+         orv.review_id
+FROM     orders o
+LEFT JOIN order_review orv
+         ON o.order_id = orv.order_id
+WHERE    orv.review_id IS NULL;
 
-select c.name,
-  sum(oi.quantity * p.price) as total_spent
-from customers c
-join order o 
-  on c.customer_id = o.customer_id
-join order items oi
-  on o.order_id = oi.order_id
-join products p 
-  on oi.product_id = p.product_id
-group by c.customer_id, c.name
-having sum(oi.quantity * p.price) > 500
-order by total_spent desc;
+-- LEFT JOIN keeps every row from the left table (orders) even when there is no matching review.
+-- For orders without a review the review_id column comes back as NULL, and the WHERE keeps only those rows.
+-- (customer LEFT JOIN orders would never show a NULL here, because Olist gives every order its own customer_id.)
 
--- multiple joins with group by and having 
---  this query joins four tables (customer orders, order_itens, and products) to calculate total amount each customer has spent.
---  it multiplies quantity by price for every item adds total for each customer using group by and sum 
---  and then by using having to show only customers who spent more than 500 
--- result are sorted from highest to lowest spending
 
---  its purpose is to find out how much each customer has spent in total and show only customer who spent more than 500, highest spender first
+-- ---------------------------------------------------------------------
+-- 3. ADVANCED - multiple joins with GROUP BY and HAVING
+-- Customers who spent more than 500 in total, highest spender first
+-- ---------------------------------------------------------------------
+SELECT   c.customer_unique_id,
+         COUNT(DISTINCT o.order_id)          AS orders_placed,
+         SUM(oi.quantity * oi.unit_price)    AS total_spent
+FROM     customer c
+JOIN     orders o      ON c.customer_id = o.customer_id
+JOIN     order_item oi ON o.order_id    = oi.order_id
+GROUP BY c.customer_unique_id
+HAVING   SUM(oi.quantity * oi.unit_price) > 500
+ORDER BY total_spent DESC;
 
--- we need 4 tables because no single table holds everything 
---  customer name in customer , order placed in orders. what was each orders is in order_items and price in products
--- 1. joins just give all rows 
--- 2. group by pulls customer rows and then sum add ups the total
--- 3. having sum > 500 keeps the group whos total is above 500 
+-- This query joins customer, orders and order_item to calculate the total amount each customer spent.
+-- The price is stored in order_item (unit_price), so the products table is not needed here.
+-- 1. the joins give one row per item bought
+-- 2. GROUP BY puts the rows of each customer together and SUM adds up quantity * unit_price
+-- 3. HAVING SUM > 500 keeps only the customers whose total is above 500
+-- customer_unique_id is used because one person gets a new customer_id for every order.
 
--- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- -- -- -- -- -- -- -- -- -- ---- -- --
 
-select c.name, o.order_id, o.order_date
-from customer c
-join orders o
-  on c.customer_id = o.customer_id
-join (
-    select customer_id, MAX(order_date) as last_date
-    from orders
-    group by customer_id
-) lo
-  on o.customer_id = lo.customer_id
-AND o.order_date = lo.last_date;
+-- ---------------------------------------------------------------------
+-- 4. ADVANCED - join with a subquery (most recent order per customer)
+-- ---------------------------------------------------------------------
+SELECT   c.customer_unique_id,
+         o.order_id,
+         o.purchase_ts
+FROM     customer c
+JOIN     orders o
+         ON c.customer_id = o.customer_id
+JOIN     (SELECT   c2.customer_unique_id,
+                   MAX(o2.purchase_ts) AS last_date
+          FROM     customer c2
+          JOIN     orders o2 ON c2.customer_id = o2.customer_id
+          GROUP BY c2.customer_unique_id) lo
+         ON  c.customer_unique_id = lo.customer_unique_id
+         AND o.purchase_ts        = lo.last_date
+ORDER BY o.purchase_ts DESC
+LIMIT    20;
 
--- this query finds most recent order placed by each customer. a subquery first finds latest order date for every customer and main query 
- -- then joins this reults back to orders table on both customer ID and date get the matching order. 
--- finally it joins customers table to display customer name
-
--- the subquery produces a temporary table named as lo (latest order)
--- 
+-- This query finds the most recent order placed by each customer.
+-- The subquery first finds the latest purchase date for every customer (a temporary table named lo, latest order),
+-- and the main query joins it back to orders on both the customer and the date to get the matching order.
