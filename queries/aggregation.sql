@@ -29,14 +29,10 @@ ORDER BY total_value DESC;
 -- ADVANCED 3. Product categories with at least 100,000 in revenue
 -- ---------------------------------------------------------------------
 SELECT c.category_name_en                          AS category,
-       COUNT(DISTINCT o.order_id)                  AS order_count,
-       SUM(oi.quantity)                            AS units_sold,
        ROUND(SUM(oi.quantity * oi.unit_price), 2)  AS revenue
 FROM order_item oi
-JOIN orders   o ON oi.order_id     = o.order_id
 JOIN product  p ON oi.product_id   = p.product_id
 JOIN category c ON p.category_name = c.category_name
-WHERE o.order_status NOT IN ('canceled', 'unavailable')
 GROUP BY c.category_name, c.category_name_en
 HAVING SUM(oi.quantity * oi.unit_price) >= 100000
 ORDER BY revenue DESC;
